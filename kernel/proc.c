@@ -8,6 +8,7 @@
 
 struct cpu cpus[NCPU];
 
+// process list
 struct proc proc[NPROC];
 
 struct proc *initproc;
