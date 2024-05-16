@@ -1,4 +1,3 @@
-// Invoke getprocs() and print the result
 
 #include "kernel/types.h"
 #include "user/user.h"
