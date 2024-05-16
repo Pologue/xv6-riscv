@@ -22,7 +22,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-// my syscall
+// get numbers of active processes
+// declared in user/user.h
 int getprocs(void);
 
 // ulib.c
