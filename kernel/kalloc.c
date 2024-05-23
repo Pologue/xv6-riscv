@@ -80,15 +80,19 @@ kalloc(void)
   return (void *)r;
 }
 
+// allocator in kernel/kalloc.c
 void *
 malloc(uint64 nbytes)
 {
-  printf("malloc called\n");
+  printf("malloc: %d bytes acquired\n", nbytes);
+  //TODO
   return (void *)0;
 }
 
-int free(void)
+// free memory in kernel/kalloc.c
+int free(uint64 addr)
 {
-  printf("free called\n");
+  printf("free: %d\n", addr);
+  //TODO
   return -1;
 }

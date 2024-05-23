@@ -4,10 +4,24 @@
 
 int main(int argc, char const *argv[])
 {
-    if (argc > 0)
+    int i;
+    uint64 addr;
+
+    if (argc <= 1)
     {
-        return free_demo();
+        printf("no attribute\n");
+        exit(0);
     }
     
-    return -1;
+    for (i = 1; i < argc; i++)
+    {
+        addr = atoi(argv[i]);
+        if (addr < 0)
+        {
+            fprintf(2, "free_demo: cannot free %s bytes\n", addr);
+            exit(1);
+        }
+        free_demo(addr);
+    }
+    exit(0);
 }

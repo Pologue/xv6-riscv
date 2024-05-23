@@ -104,5 +104,8 @@ sys_malloc_demo(void)
 uint64
 sys_free_demo(void)
 {
-  return free();
+  uint64 addr;
+
+  argaddr(0, &addr);
+  return free(addr);
 }

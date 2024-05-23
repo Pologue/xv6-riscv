@@ -4,10 +4,24 @@
 
 int main(int argc, char const *argv[])
 {
-    if (argc > 0)
+    int i;
+    uint64 nbytes;
+
+    if (argc <= 1)
     {
-        return malloc_demo((uint64)argv[1]) ;
+        malloc_demo(0);
+        exit(0);
     }
-    
-    return -1;
+
+    for (i = 1; i < argc; i++)
+    {
+        nbytes = atoi(argv[i]);
+        if (nbytes < 0)
+        {
+            fprintf(2, "malloc_demo: cannot malloc %s bytes\n", nbytes);
+            exit(1);
+        }
+        malloc_demo(nbytes);
+    }
+    exit(0);
 }
