@@ -22,6 +22,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int malloc_demo(uint64);
+int free_demo(void);
 
 // ulib.c
 int stat(const char*, struct stat*);
