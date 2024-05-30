@@ -107,5 +107,6 @@ sys_free_demo(void)
   uint64 addr;
 
   argaddr(0, &addr);
-  return free(addr);
+  free((void *)addr);
+  return 0;
 }

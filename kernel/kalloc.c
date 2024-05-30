@@ -9,6 +9,8 @@
 #include "riscv.h"
 #include "defs.h"
 
+#define RESERVED 16 * 1024 * 1024 // 16MB
+
 void freerange(void *pa_start, void *pa_end);
 
 extern char end[]; // first address after kernel.
@@ -25,10 +27,22 @@ struct
   struct run *freelist;
 } kmem;
 
+struct header
+{
+  struct header *next;
+  uint64 size;
+  int is_free;
+};
+
+typedef struct header Header;
+
+void *base = (void *)PHYSTOP - RESERVED + 1;
+static Header *free_list;
+
 void kinit()
 {
   initlock(&kmem.lock, "kmem");
-  freerange(end, (void *)PHYSTOP);
+  freerange(end, (void *)PHYSTOP - RESERVED);
 }
 
 void freerange(void *pa_start, void *pa_end)
@@ -84,15 +98,89 @@ kalloc(void)
 void *
 malloc(uint64 nbytes)
 {
-  printf("malloc: %d bytes acquired\n", nbytes);
-  //TODO
-  return (void *)0;
+  printf("malloc: try to allocate %d bytes\n", nbytes);
+  // TODO
+  Header *curr, *prev;
+  uint64 nunits;
+
+  nunits = (nbytes + sizeof(Header) - 1)/sizeof(Header) + 1;
+  if ((prev = free_list) == 0) // free_list not initialized
+  {
+    // initialize free_list
+    free_list = prev = (Header *)base;
+    free_list->size = RESERVED - sizeof(Header);
+    free_list->next = 0;
+  }
+
+  for(curr = prev->next; ; prev = curr, curr = curr->next){
+    if(curr->size >= nunits){
+      if(curr->size == nunits)
+        prev->next = curr->next;
+      else {
+        curr->size -= nunits;
+        curr += curr->size;
+        curr->size = nunits;
+      }
+      free_list = prev;
+      return (void*)(curr + 1);
+    }
+    if(curr == free_list)
+      // if((curr = morecore(nunits)) == 0)
+        return 0;
+  }
+
+  // curr = free_list;
+  // while (curr && !(curr->is_free && curr->size >= nbytes))
+  // {
+  //   prev = curr;
+  //   curr = curr->next;
+  // }
+
+  // if (!curr)
+  // {
+  //   // 没有找到足够大的空闲块，需要分配一个新的页面
+  //   ptr = kalloc();
+  //   if (!ptr)
+  //   {
+  //     return 0;
+  //   }
+  //   curr = (struct header *)ptr;
+  //   curr->size = PGSIZE - sizeof(Header);
+  //   curr->is_free = 0;
+  //   curr->next = 0;
+  //   prev->next = curr;
+  // }
+  // else
+  // {
+  //   // 找到了一个足够大的空闲块
+  //   curr->is_free = 0;
+  // }
+
+  // return (void *)(curr + 1);
+
+  // // return (void *)0;
 }
 
 // free memory in kernel/kalloc.c
-int free(uint64 addr)
+void free(void *addr)
 {
-  printf("free: %d\n", addr);
-  //TODO
-  return -1;
+  printf("free: address %d\n", addr);
+  // TODO
+  Header *bp, *p;
+
+  bp = (Header*)addr - 1;
+  for(p = free_list; !(bp > p && bp < p->next); p = p->next)
+    if(p >= p->next && (bp > p || bp < p->next))
+      break;
+  if(bp + bp->size == p->next){
+    bp->size += p->next->size;
+    bp->next = p->next->next;
+  } else
+    bp->next = p->next;
+  if(p + p->size == bp){
+    p->size += bp->size;
+    p->next = bp->next;
+  } else
+    p->next = bp;
+  free_list = p;
 }
