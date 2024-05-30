@@ -108,10 +108,11 @@ malloc(uint64 nbytes)
   {
     // initialize free_list
     free_list = prev = (Header *)base;
-    free_list->size = RESERVED - sizeof(Header);
-    free_list->next = 0;
+    free_list->size = (RESERVED - sizeof(Header)) / sizeof(Header);
+    free_list->next = free_list;
   }
 
+  // find a free block
   for(curr = prev->next; ; prev = curr, curr = curr->next){
     if(curr->size >= nunits){
       if(curr->size == nunits)
@@ -125,40 +126,8 @@ malloc(uint64 nbytes)
       return (void*)(curr + 1);
     }
     if(curr == free_list)
-      // if((curr = morecore(nunits)) == 0)
-        return 0;
+      return 0;
   }
-
-  // curr = free_list;
-  // while (curr && !(curr->is_free && curr->size >= nbytes))
-  // {
-  //   prev = curr;
-  //   curr = curr->next;
-  // }
-
-  // if (!curr)
-  // {
-  //   // 没有找到足够大的空闲块，需要分配一个新的页面
-  //   ptr = kalloc();
-  //   if (!ptr)
-  //   {
-  //     return 0;
-  //   }
-  //   curr = (struct header *)ptr;
-  //   curr->size = PGSIZE - sizeof(Header);
-  //   curr->is_free = 0;
-  //   curr->next = 0;
-  //   prev->next = curr;
-  // }
-  // else
-  // {
-  //   // 找到了一个足够大的空闲块
-  //   curr->is_free = 0;
-  // }
-
-  // return (void *)(curr + 1);
-
-  // // return (void *)0;
 }
 
 // free memory in kernel/kalloc.c

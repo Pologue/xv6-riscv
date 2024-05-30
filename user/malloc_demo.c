@@ -21,7 +21,8 @@ int main(int argc, char const *argv[])
             fprintf(2, "malloc_demo: cannot malloc %s bytes\n", nbytes);
             exit(1);
         }
-        malloc_demo(nbytes);
+        void *addr = malloc_demo(nbytes);
+        printf("malloc_demo: allocated %d bytes at address %x\n", nbytes, addr);
     }
     exit(0);
 }
