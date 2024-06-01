@@ -36,8 +36,8 @@ struct header
 
 typedef struct header Header;
 
-void *base = (void *)PHYSTOP - RESERVED + 1;
-static Header *free_list;
+void *base = (void *)PHYSTOP - RESERVED + 1; // 0x8700_0000
+static Header *free_list; // circular linked list
 
 void kinit()
 {
@@ -99,11 +99,11 @@ void *
 malloc(uint64 nbytes)
 {
   printf("malloc: try to allocate %d bytes\n", nbytes);
-  // TODO
+
   Header *curr, *prev;
   uint64 nunits;
 
-  nunits = (nbytes + sizeof(Header) - 1)/sizeof(Header) + 1;
+  nunits = (nbytes + sizeof(Header) - 1) / sizeof(Header) + 1; // number of Header units
   if ((prev = free_list) == 0) // free_list not initialized
   {
     // initialize free_list
@@ -113,19 +113,25 @@ malloc(uint64 nbytes)
   }
 
   // find a free block
-  for(curr = prev->next; ; prev = curr, curr = curr->next){
-    if(curr->size >= nunits){
-      if(curr->size == nunits)
-        prev->next = curr->next;
-      else {
+  for (curr = prev->next;; prev = curr, curr = curr->next)
+  {
+    if (curr->size >= nunits)
+    {
+      if (curr->size == nunits)
+        prev->next = curr->next; // remove curr from free_list
+      else
+      {
+        Header *new_block = curr + curr->size - nunits;
+        new_block->size = nunits;
         curr->size -= nunits;
-        curr += curr->size;
-        curr->size = nunits;
+        // curr += curr->size; // move to the end of allocated block
+        // curr->size = nunits;
+        curr = new_block;
       }
       free_list = prev;
-      return (void*)(curr + 1);
+      return (void *)(curr + 1); // return the address of the first byte after the header
     }
-    if(curr == free_list)
+    if (curr == free_list)
       return 0;
   }
 }
@@ -133,23 +139,36 @@ malloc(uint64 nbytes)
 // free memory in kernel/kalloc.c
 void free(void *addr)
 {
-  printf("free: address %d\n", addr);
-  // TODO
+  printf("free: address %p\n", addr);
+
+  // assert that addr is a valid address
+  if (/* ((uint64)addr % PGSIZE) != 0 ||  */(char *)addr < end || (uint64)addr >= PHYSTOP)
+    panic("free: invalid address");
+
   Header *bp, *p;
 
-  bp = (Header*)addr - 1;
-  for(p = free_list; !(bp > p && bp < p->next); p = p->next)
-    if(p >= p->next && (bp > p || bp < p->next))
+  bp = (Header *)addr - 1; // point to the header
+  // find the block before bp
+  for (p = free_list; !(bp > p && bp < p->next); p = p->next)
+    if (p >= p->next && (bp > p || bp < p->next))
       break;
-  if(bp + bp->size == p->next){
+
+  // merge with the block before
+  if (bp + bp->size == p->next)
+  {
     bp->size += p->next->size;
     bp->next = p->next->next;
-  } else
+  }
+  else // insert bp between p and p->next
     bp->next = p->next;
-  if(p + p->size == bp){
+
+  // merge with the block after
+  if (p + p->size == bp)
+  {
     p->size += bp->size;
     p->next = bp->next;
-  } else
+  }
+  else // insert p between bp and bp->next
     p->next = bp;
   free_list = p;
 }

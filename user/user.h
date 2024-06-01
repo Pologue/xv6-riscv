@@ -23,7 +23,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 void* malloc_demo(uint64);
-int free_demo(uint64);
+void free_demo(uint64);
 
 // ulib.c
 int stat(const char*, struct stat*);
